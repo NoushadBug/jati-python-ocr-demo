@@ -1,0 +1,9 @@
+NOTE: Make sure you have Python installed in your computer
+    download exe from (https://www.python.org/ftp/python/3.12.2/python-3.12.2-amd64.exe)
+    then install the python
+
+1. initially, run this command to install the packages:
+    pip install -r requirements.txt
+
+2. Then, go to this folder, and run this command -
+    python main.py
