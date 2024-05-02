@@ -6,9 +6,9 @@ import fitz  # PyMuPDF
 import re
 
 # Input folder directory
-input_folder = r"E:\python\jati-python-ocr-demo\ov"
+input_folder = r"F:\python\jati-python-ocr-demo\ov"
 # Output CSV file name and location
-output_file = r"E:\python\jati-python-ocr-demo\output.csv"
+output_file = r"F:\python\jati-python-ocr-demo\output.csv"
 
 def perform_ocr(image):
     """
@@ -16,7 +16,7 @@ def perform_ocr(image):
     """
     try:
         # Use pytesseract to extract text from the image
-        extracted_text = pytesseract.image_to_string(image)
+        extracted_text = pytesseract.image_to_string(image, lang='hrv')
         return extracted_text.strip()
     except Exception as e:
         print(f"Error performing OCR: {e}")
