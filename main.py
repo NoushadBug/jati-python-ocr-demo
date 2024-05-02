@@ -3,6 +3,7 @@ import csv
 from PIL import Image
 import pytesseract
 import fitz  # PyMuPDF
+import re
 
 # Input folder directory
 input_folder = r"E:\python\jati-python-ocr-demo\ov"
@@ -89,9 +90,41 @@ def process_image(image_path):
         print(f"Error processing image {image_path}: {e}")
         return ""
 
+def extract_information(text):
+    """
+    Extract invoice number, date, and amount from OCR text.
+    """
+    # Define patterns for invoice number variations
+    invoice_patterns = [
+        r"Račun\s*broj:\s*([0-9A-Za-z-/]+)",
+        r"Račun\s*br[.]*:\s*([0-9A-Za-z-/]+)",
+        r"računa\s*broj\s*([0-9A-Za-z-/]+)",
+        r"RAČUN\s*br[.]*\s*([0-9A-Za-z-/]+)"
+    ]
+    date_pattern = r"(Datum|Dana):\s*(\d{1,2}\.\d{1,2}\.\d{2,4})"
+    amount_pattern = r"(Iznos|Ukupno|Uplatu):\s*(\d+(\.\d+)?\s*(kn|€|$))"
+
+    # Find invoice number
+    invoice = ""
+    for pattern in invoice_patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            invoice = match.group(1)
+            break
+
+    # Find date and amount
+    date_match = re.search(date_pattern, text, re.IGNORECASE)
+    amount_match = re.search(amount_pattern, text, re.IGNORECASE)
+
+    date = date_match.group(2) if date_match else ""
+    amount = amount_match.group(0) if amount_match else ""
+
+    return invoice, date, amount
+
 def process_files(input_folder, output_file):
     """
-    Process files in the input folder: perform OCR on PDFs and images.
+    Process files in the input folder: perform OCR on PDFs and images,
+    and extract invoice number, date, and amount.
     """
     results = []
     for file_name in os.listdir(input_folder):
@@ -104,25 +137,27 @@ def process_files(input_folder, output_file):
                 else:
                     # Handle image files
                     extracted_text = process_image(file_path)
-                results.append((file_name, extracted_text))
+                
+                invoice, date, amount = extract_information(extracted_text)
+                results.append((file_name, extracted_text, invoice, date, amount))
             except Exception as e:
                 # Handle exceptions by adding filename to results with empty text
                 print(f"Error processing {file_name}: {e}")
-                results.append((file_name, ""))
-    # Save extracted text to CSV file
+                results.append((file_name, "", "", "", ""))
+    # Save extracted text and information to CSV file
     save_to_csv(results, output_file)
 
 def save_to_csv(data, output_file):
     """
-    Save extracted text to CSV file.
+    Save extracted text and information to CSV file.
     """
     try:
         with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
             csv_writer = csv.writer(csvfile)
-            csv_writer.writerow(['File Name', 'Extracted Text'])
-            for file_name, text in data:
-                csv_writer.writerow([file_name, text])
-        print(f"Extracted text saved to {output_file}")
+            csv_writer.writerow(['File Name', 'Extracted Text', 'Invoice', 'Date', 'Amount'])
+            for row in data:
+                csv_writer.writerow(row)
+        print(f"Extracted text and information saved to {output_file}")
     except Exception as e:
         print(f"Error saving to CSV file: {e}")
 
