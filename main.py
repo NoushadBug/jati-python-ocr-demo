@@ -5,10 +5,23 @@ import pytesseract
 import fitz  # PyMuPDF
 import re
 
-# Input folder directory
-input_folder = r"F:\python\jati-python-ocr-demo\ov"
-# Output CSV file name and location
-output_file = r"F:\python\jati-python-ocr-demo\output.csv"
+def read_config(config_file):
+    """
+    Read configuration from a text file.
+    """
+    input_folder = ""
+    output_file = ""
+    try:
+        with open(config_file, 'r') as file:
+            for line in file:
+                if line.startswith("input_folder"):
+                    input_folder = re.search(r'=(.*)', line).group(1).strip()
+                elif line.startswith("output_file"):
+                    output_file = re.search(r'=(.*)', line).group(1).strip()
+    except Exception as e:
+        print(f"Error reading configuration file: {e}")
+    return input_folder, output_file
+
 
 def perform_ocr(image):
     """
@@ -101,8 +114,33 @@ def extract_information(text):
         r"računa\s*broj\s*([0-9A-Za-z-/]+)",
         r"RAČUN\s*br[.]*\s*([0-9A-Za-z-/]+)"
     ]
-    date_pattern = r"(Datum|Dana):\s*(\d{1,2}\.\d{1,2}\.\d{2,4})"
-    amount_pattern = r"(Iznos|Ukupno|Uplatu):\s*(\d+(\.\d+)?\s*(kn|€|$))"
+    
+    # Define date patterns
+    date_patterns = [
+        r"Datum\s*računa:\s*(\d{2}\.\d{2}\.\d{4})",
+        r"Datum:\s*(\d{2}\.\d{2}\.\d{4})",
+        r"Datum\s*i\s*vrijeme:\s*(\d{1,2}\.\d{1,2}\.\d{4})",
+        r"Datum\s*dokumenta:\s*(\d{2}\.\d{2}\.\d{4})",
+        r"Datum\s*izdavanja:\s*(\d{2}\.\d{2}\.\d{4})",
+        r"dana\s*(\d{2}\.\d{2}\.\d{4})",
+        r"datum\s*izdavanja:\s*.*?(\d{1,2}\.\d{1,2}\.\d{4})",
+        r"\d{1,2}\.\d{1,2}\.\d{4}",
+        r"Issue\s*date:\s*(\d{2}/\d{2}/\d{4})"
+    ]
+
+    # Define amount patterns
+    amount_patterns = [
+        r"Ukupan\s*iznos\s*naplate:\s*(\d+,\d+)\s*€",
+        r"TOTAL\s*\(\w+\):\s*€(\d+,\d+\.\d{2})",
+        r"UKUPNO:\s*(\d+,\d+)\s*(EUR|€)",
+        r"Amount\s*paid\s*\(\w+\)\s*€\s*(\d+,\d+\.\d{2})",
+        r"Za\s*uplatu\s*(EUR|€):\s*(\d+,\d+)",
+        r"Ukupan\s*iznos\s*za\s*plaćanje\s*(\d+,\d+)\s*(EUR|€)",
+        r"Ukupno\s*([\d,]+\s*(EUR|€))",
+        r"Sveukupno\s*\(\w+:\s*[\d,]+\)\s*(\d+,\d+)\s*(EUR|€)",
+        r"Iznos\s*([\d,]+)",
+        r"UKUPNO\s*IZNOS:\s*\w+\s*=\s*([\d,]+)\s*(EUR|€)\s*\w+\s*=\s*([\d,]+)"
+    ]
 
     # Find invoice number
     invoice = ""
@@ -112,12 +150,21 @@ def extract_information(text):
             invoice = match.group(1)
             break
 
-    # Find date and amount
-    date_match = re.search(date_pattern, text, re.IGNORECASE)
-    amount_match = re.search(amount_pattern, text, re.IGNORECASE)
+    # Find date
+    date = ""
+    for pattern in date_patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            date = match.group(1)
+            break
 
-    date = date_match.group(2) if date_match else ""
-    amount = amount_match.group(0) if amount_match else ""
+    # Find amount
+    amount = ""
+    for pattern in amount_patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            amount = match.group(0)
+            break
 
     return invoice, date, amount
 
@@ -162,6 +209,9 @@ def save_to_csv(data, output_file):
         print(f"Error saving to CSV file: {e}")
 
 def main():
+    # Read configuration from config.txt
+    config_file = "config.txt"
+    input_folder, output_file = read_config(config_file)
     # Process files in the input folder
     process_files(input_folder, output_file)
 

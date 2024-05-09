@@ -7,5 +7,9 @@ NOTE: Make sure you have Python installed in your computer
 2. initially, run this command to install the packages:
     pip install -r requirements.txt
 
-3. Then, go to this folder, and run this command -
+3. go to config.txt(if no config.txt then create the file) and put the folder directories, for example:
+    input_folder = E:\python\jati-python-ocr-demo\ov
+    output_file = E:\python\jati-python-ocr-demo\output.csv
+ 
+4. Then, go to this folder, and run this command -
     python main.py
